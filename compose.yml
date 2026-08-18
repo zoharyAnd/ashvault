@@ -1,20 +1,19 @@
 services:
-  db:
+  postgres:
     image: postgres:16-alpine
     container_name: ashvault-db
-    restart: unless-stopped
+    restart: always
     environment:
       POSTGRES_USER: ashvault
-      POSTGRES_PASSWORD: ashvault
+      POSTGRES_PASSWORD: a_sample_password
       POSTGRES_DB: ashvault
-    # Host port 5433 (5432 is often taken by another local Postgres);
-    # container still listens on 5432 internally.
     ports:
-      - "5433:5432"
+      # Host 5432 -> container 5432. choose other host port if you already have a local postgres running on 5432,
+      - '5432:5432'
     volumes:
       - ashvault-pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ashvault -d ashvault"]
+      test: ['CMD-SHELL', 'pg_isready -U ashvault -d ashvault']
       interval: 5s
       timeout: 5s
       retries: 10
