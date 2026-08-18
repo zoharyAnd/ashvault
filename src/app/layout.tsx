@@ -31,8 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {children}
         </main>
         <footer className="border-t border-border py-6 text-center text-xs text-muted">
-          AshVault · zero-knowledge secret sharing · built as a security portfolio
-          piece
+          AshVault · © Zohary Andrianome 2026
         </footer>
       </body>
     </html>

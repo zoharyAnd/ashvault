@@ -2,7 +2,7 @@
 
 **Share a password, API key, or private note through a link that works exactly once — then destroys itself.**
 
-AshVault is a self-destructing secret-sharing vault built as a security portfolio piece. Every feature is a security concept made visible: the server stores ciphertext it can't read, a link dies the instant it's opened, and the boundaries are proven by tests rather than claimed in a bullet point.
+AshVault is a self-destructing secret-sharing vault. Every feature is a security concept made visible: the server stores ciphertext it can't read, a link dies the instant it's opened, and the boundaries are proven by tests rather than claimed in a bullet point.
 
 > **The 10-second demo:** create a secret → open the link → see it → refresh → it's gone forever.
 
