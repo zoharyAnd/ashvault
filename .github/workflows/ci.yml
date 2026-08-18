@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# A newer push to the same branch/PR cancels the in-flight run.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: Lint & unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.10.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm lint
+
+      - run: pnpm test
+
+  e2e:
+    name: E2E (Playwright)
+    runs-on: ubuntu-latest
+
+    # Throwaway Postgres for this run only — never touches the VPS database.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ashvault
+          POSTGRES_PASSWORD: ashvault
+          POSTGRES_DB: ashvault
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ashvault -d ashvault"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://ashvault:ashvault@localhost:5432/ashvault
+      # Not a real secret — only signs JWTs for the ephemeral test run.
+      AUTH_SECRET: ci-not-a-real-secret-just-for-tests
+      NEXT_PUBLIC_APP_URL: http://localhost:3000
+      # Seed/e2e credentials come from repo secrets, never the repo tree.
+      SEED_ADMIN_EMAIL: ${{ secrets.SEED_ADMIN_EMAIL }}
+      SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
+      SEED_USER1_EMAIL: ${{ secrets.SEED_USER1_EMAIL }}
+      SEED_USER1_PASSWORD: ${{ secrets.SEED_USER1_PASSWORD }}
+      SEED_USER2_EMAIL: ${{ secrets.SEED_USER2_EMAIL }}
+      SEED_USER2_PASSWORD: ${{ secrets.SEED_USER2_PASSWORD }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.10.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Apply database migrations
+        run: pnpm db:migrate
+
+      - name: Seed test users
+        run: pnpm db:seed
+
+      - name: Run Playwright e2e tests
+        run: pnpm test:e2e
