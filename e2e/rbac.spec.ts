@@ -12,7 +12,7 @@ test.describe("auth & RBAC boundaries", () => {
   test("a signed-in non-admin cannot reach the admin panel", async ({
     page,
   }) => {
-    await login(page, USERS.bob);
+    await login(page, USERS.user1);
     await page.goto("/admin");
     // Middleware bounces non-admins back to their dashboard.
     await expect(page).toHaveURL(/\/dashboard/);
@@ -28,28 +28,28 @@ test.describe("auth & RBAC boundaries", () => {
   });
 
   test("user A cannot read user B's audit log", async ({ browser }) => {
-    // Alice creates a secret (owned by her) and it gets opened once.
-    const aliceCtx = await browser.newContext();
-    const alicePage = await aliceCtx.newPage();
-    await login(alicePage, USERS.alice);
-    const { id } = await createSecret(alicePage.request, "alice-only");
-    await alicePage.request.post(`/api/secrets/${id}/reveal`);
+    // User One creates a secret (owned by them) and it gets opened once.
+    const user1Ctx = await browser.newContext();
+    const user1Page = await user1Ctx.newPage();
+    await login(user1Page, USERS.user1);
+    const { id } = await createSecret(user1Page.request, "user1-only");
+    await user1Page.request.post(`/api/secrets/${id}/reveal`);
 
-    // Alice can see her own audit log.
-    const ownResp = await alicePage.goto(`/dashboard/secrets/${id}`);
+    // User One can see their own audit log.
+    const ownResp = await user1Page.goto(`/dashboard/secrets/${id}`);
     expect(ownResp?.status()).toBe(200);
     await expect(
-      alicePage.getByRole("heading", { name: "Audit log" }),
+      user1Page.getByRole("heading", { name: "Audit log" }),
     ).toBeVisible();
 
-    // Bob cannot — the ownership check turns it into a 404, never her data.
-    const bobCtx = await browser.newContext();
-    const bobPage = await bobCtx.newPage();
-    await login(bobPage, USERS.bob);
-    const bobResp = await bobPage.goto(`/dashboard/secrets/${id}`);
-    expect(bobResp?.status()).toBe(404);
+    // User Two cannot — the ownership check turns it into a 404, never their data.
+    const user2Ctx = await browser.newContext();
+    const user2Page = await user2Ctx.newPage();
+    await login(user2Page, USERS.user2);
+    const user2Resp = await user2Page.goto(`/dashboard/secrets/${id}`);
+    expect(user2Resp?.status()).toBe(404);
 
-    await aliceCtx.close();
-    await bobCtx.close();
+    await user1Ctx.close();
+    await user2Ctx.close();
   });
 });

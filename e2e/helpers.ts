@@ -2,11 +2,27 @@ import { type Page, type APIRequestContext, expect } from "@playwright/test";
 import postgres from "postgres";
 import { sealSecret } from "../src/lib/crypto";
 
-/** Seeded credentials (see src/db/seed.ts). */
+/**
+ * Seeded credentials, sourced from the environment (never committed). These are
+ * the same accounts created by `pnpm db:seed`; set them in your local .env (see
+ * .env.example) or as CI secrets. Missing vars fail the suite immediately
+ * rather than producing confusing login timeouts.
+ */
+function userFromEnv(emailVar: string, passwordVar: string) {
+  const email = process.env[emailVar];
+  const password = process.env[passwordVar];
+  if (!email || !password) {
+    throw new Error(
+      `Missing e2e credentials: set ${emailVar} and ${passwordVar} (see .env.example).`,
+    );
+  }
+  return { email, password };
+}
+
 export const USERS = {
-  admin: { email: "REDACTED", password: "REDACTED" },
-  alice: { email: "REDACTED", password: "REDACTED" },
-  bob: { email: "REDACTED", password: "REDACTED" },
+  admin: userFromEnv("SEED_ADMIN_EMAIL", "SEED_ADMIN_PASSWORD"),
+  user1: userFromEnv("SEED_USER1_EMAIL", "SEED_USER1_PASSWORD"),
+  user2: userFromEnv("SEED_USER2_EMAIL", "SEED_USER2_PASSWORD"),
 };
 
 export async function login(
